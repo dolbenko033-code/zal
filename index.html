@@ -589,7 +589,7 @@
 </header>
 
 <main class="container">
-  <!-- ==================== ЭКРАН 1: ТРЕНИРОВКА ==================== -->
+  <!-- ====================  1: ТРЕНИРОВКА ==================== -->
   <section id="view-workout" class="view active">
     <div id="sessionCard" class="card card-accent"></div>
     <div id="restWidget" class="rest-widget" style="display:none;"></div>
@@ -600,7 +600,7 @@
     </div>
   </section>
 
-  <!-- ==================== ЭКРАН 2: ИИ-ТРЕНЕР ==================== -->
+  <!-- ====================  2: ИИ-ТРЕНЕР ==================== -->
   <section id="view-ai" class="view">
     <div class="card">
       <div class="section-title" style="margin-top:0;">Горизонт планирования</div>
@@ -649,7 +649,7 @@
     <div id="aiResultWrap"></div>
   </section>
 
-  <!-- ==================== ЭКРАН 3: ПРОГРЕСС ==================== -->
+  <!-- ====================  3: ПРОГРЕСС ==================== -->
   <section id="view-progress" class="view">
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
@@ -684,6 +684,20 @@
       <div class="section-title" style="margin-top:0;">Данные для ИИ-тренера</div>
       <div style="display:grid; grid-template-columns:1fr 2fr; gap:10px; margin-bottom:10px;">
         <div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px;">
+        <div>
+          <label for="profMaxSquat">Присед 1ПМ</label>
+          <input id="profMaxSquat" type="text" inputmode="decimal" placeholder="кг" />
+        </div>
+        <div>
+          <label for="profMaxBench">Жим 1ПМ</label>
+          <input id="profMaxBench" type="text" inputmode="decimal" placeholder="кг" />
+        </div>
+        <div>
+          <label for="profMaxDeadlift">Тяга 1ПМ</label>
+          <input id="profMaxDeadlift" type="text" inputmode="decimal" placeholder="кг" />
+        </div>
+      </div>
           <label for="profBw">Вес тела (кг)</label>
           <input id="profBw" type="text" inputmode="decimal" />
         </div>
