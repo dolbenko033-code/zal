@@ -1,1 +1,1866 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>IRON AI — Силовой Дневник</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #08080a;
+      --bg-card: rgba(22, 22, 27, 0.82);
+      --bg-card-solid: #16161b;
+      --bg-input: rgba(12, 12, 15, 0.9);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-active: rgba(255, 94, 0, 0.55);
+      --accent: #ff5e00;
+      --accent-2: #ff8a00;
+      --accent-glow: rgba(255, 94, 0, 0.28);
+      --text: #f4f4f6;
+      --text-dim: #92929e;
+      --green: #22c55e;
+      --yellow: #facc15;
+      --red: #ef4444;
+      --radius: 18px;
+      --nav-h: 72px;
+    }
 
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(circle at 50% -12%, rgba(255, 94, 0, 0.18), transparent 45%),
+        radial-gradient(circle at 90% 25%, rgba(255, 138, 0, 0.07), transparent 40%);
+      background-attachment: fixed;
+      color: var(--text);
+      padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 18px);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .num { font-variant-numeric: tabular-nums; }
+
+    /* Header */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      background: rgba(8, 8, 10, 0.78);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      font-size: 16px;
+    }
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 12px var(--accent);
+    }
+    .sync-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .sync-pill.online { border-color: rgba(34, 197, 94, 0.35); color: #86efac; }
+    .sync-pill.pending { border-color: rgba(255, 94, 0, 0.5); color: var(--accent-2); }
+
+    /* Container & Views */
+    .container { max-width: 560px; margin: 0 auto; padding: 14px 14px 24px; }
+    .view { display: none; animation: fadeIn 0.2s ease; }
+    .view.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Glass Cards */
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 15px;
+      margin-bottom: 12px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    }
+    .card-accent {
+      border-color: var(--border-active);
+      box-shadow: 0 0 24px rgba(255, 94, 0, 0.12);
+    }
+    .section-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      font-weight: 700;
+      margin: 14px 4px 8px;
+    }
+
+    /* Buttons */
+    .btn {
+      border: none;
+      border-radius: 14px;
+      padding: 13px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.12s ease, opacity 0.15s ease;
+      color: #fff;
+      font-family: inherit;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 6px 20px var(--accent-glow);
+      width: 100%;
+    }
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.16);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+    }
+    .btn-sm {
+      padding: 7px 11px;
+      font-size: 12px;
+      border-radius: 10px;
+    }
+    .btn-icon {
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    /* Inputs */
+    input, textarea, select {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      padding: 11px 12px;
+      font-size: 15px;
+      font-family: inherit;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    /* Workout Header Banner */
+    .session-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .live-timer {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      background: linear-gradient(90deg, #fff, var(--accent-2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .meta-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+    /* Rest Timer Widget */
+    .rest-widget {
+      position: sticky;
+      top: 56px;
+      z-index: 25;
+      background: linear-gradient(135deg, rgba(28, 17, 12, 0.96), rgba(18, 18, 22, 0.96));
+      border: 1px solid var(--border-active);
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 94, 0, 0.15);
+    }
+    .rest-widget.done {
+      border-color: var(--green);
+      box-shadow: 0 0 24px rgba(34, 197, 94, 0.3);
+    }
+    .rest-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .rest-time { font-size: 28px; font-weight: 800; line-height: 1; }
+    .rest-target-badge {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #09090b;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 6px 11px;
+      border-radius: 10px;
+      white-space: nowrap;
+    }
+    .rest-bar-bg {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 99px;
+      margin: 10px 0;
+      overflow: hidden;
+    }
+    .rest-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.25s linear;
+    }
+    .rest-presets {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* Exercise Card */
+    .ex-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .ex-title { font-size: 16px; font-weight: 800; line-height: 1.25; }
+    .ex-meta { font-size: 12px; color: var(--accent-2); margin-top: 3px; font-weight: 600; }
+    .ex-last { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+    .ex-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    /* Warmup Box */
+    .warmup-box {
+      background: rgba(255, 94, 0, 0.07);
+      border: 1px dashed rgba(255, 94, 0, 0.35);
+      border-radius: 12px;
+      padding: 10px;
+      margin: 8px 0 10px;
+    }
+    .warmup-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 0;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .warmup-row:last-child { border-bottom: none; }
+    .warmup-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .warmup-check.checked { opacity: 0.45; text-decoration: line-through; }
+
+    /* Set Rows */
+    .set-list { display: flex; flex-direction: column; gap: 7px; margin: 10px 0; }
+    .set-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 8px 10px;
+    }
+    .set-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 7px;
+      background: rgba(255, 94, 0, 0.18);
+      color: var(--accent-2);
+      font-size: 12px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .set-val { font-weight: 700; font-size: 15px; flex: 1; }
+    .set-tag-badge {
+      font-size: 11px;
+      padding: 3px 7px;
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.07);
+      white-space: nowrap;
+    }
+
+    /* Quick Add Set Form */
+    .add-set-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .chip-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .chip {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip.selected {
+      background: rgba(255, 94, 0, 0.2);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* Segmented Toggle & Mode Grid */
+    .seg {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 4px;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .seg-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-weight: 700;
+      font-size: 13px;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .seg-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+    }
+
+    .mode-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .mode-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+    }
+    .mode-card.active {
+      background: rgba(255, 94, 0, 0.16);
+      border-color: var(--accent);
+      box-shadow: 0 0 18px rgba(255, 94, 0, 0.16);
+    }
+    .mode-card .m-icon { font-size: 20px; margin-bottom: 4px; }
+    .mode-card .m-name { font-size: 13px; font-weight: 800; color: var(--text); }
+    .mode-card .m-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+    .athlete-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+    .athlete-btn {
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 9px 10px;
+      text-align: left;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .athlete-btn.active {
+      background: rgba(255, 94, 0, 0.2);
+      border-color: var(--accent);
+    }
+    .athlete-btn .a-name { font-size: 12.5px; font-weight: 700; }
+    .athlete-btn .a-tag { font-size: 10.5px; color: var(--text-dim); margin-top: 2px; }
+
+    /* Charts */
+    .chart-wrap {
+      width: 100%;
+      height: 170px;
+      margin-top: 10px;
+    }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .stat-box {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center;
+    }
+    .stat-val { font-size: 17px; font-weight: 800; color: var(--accent-2); }
+    .stat-lbl { font-size: 10.5px; color: var(--text-dim); margin-top: 2px; }
+
+    /* History Cards */
+    .hist-item { cursor: pointer; }
+    .hist-top { display: flex; justify-content: space-between; align-items: center; }
+    .hist-date { font-weight: 800; font-size: 15px; }
+    .hist-ton { font-weight: 800; font-size: 14px; color: var(--accent-2); }
+    .hist-details { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 13px; }
+    .hist-item.open .hist-details { display: block; }
+
+    /* Rating 1-5 */
+    .scale-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
+    .scale-btn {
+      padding: 11px 0;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      font-weight: 800;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .scale-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-color: var(--accent);
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      background: rgba(12, 12, 15, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .nav-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 4px 0;
+      font-family: inherit;
+    }
+    .nav-btn .n-ico { font-size: 20px; transition: transform 0.15s; }
+    .nav-btn.active { color: var(--accent-2); }
+    .nav-btn.active .n-ico { transform: translateY(-2px); filter: drop-shadow(0 0 8px var(--accent)); }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 12px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-sheet {
+      width: 100%;
+      max-width: 540px;
+      max-height: 88vh;
+      overflow-y: auto;
+      background: #131318;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+      animation: slideUp 0.2s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .modal-title { font-size: 17px; font-weight: 800; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 66px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: #1e1e24;
+      border: 1px solid var(--border-active);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      z-index: 90;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .loader {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="brand-dot"></span>IRON AI</div>
+  <button id="syncPill" class="sync-pill" onclick="syncWithCloud(true)">
+    <span id="syncText">Локально</span>
+  </button>
+</header>
+
+<main class="container">
+  <!-- ==================== ЭКРАН 1: ТРЕНИРОВКА ==================== -->
+  <section id="view-workout" class="view active">
+    <div id="sessionCard" class="card card-accent"></div>
+    <div id="restWidget" class="rest-widget" style="display:none;"></div>
+    <div id="exercisesContainer"></div>
+    <div id="workoutFooterActions" style="display:none; gap:8px; flex-direction:column;">
+      <button class="btn btn-ghost" onclick="openAddExerciseModal()">＋ Добавить упражнение</button>
+      <button class="btn btn-primary" onclick="openFinishModal()">🏁 Завершить тренировку</button>
+    </div>
+  </section>
+
+  <!-- ==================== ЭКРАН 2: ИИ-ТРЕНЕР ==================== -->
+  <section id="view-ai" class="view">
+    <div class="card">
+      <div class="section-title" style="margin-top:0;">Горизонт планирования</div>
+      <div class="seg">
+        <button class="seg-btn active" id="hor-one" onclick="setHorizon('one')">1 тренировка</button>
+        <button class="seg-btn" id="hor-week" onclick="setHorizon('week')">Неделя (3 дня)</button>
+      </div>
+
+      <div class="section-title">Режим тренировки</div>
+      <div class="mode-grid">
+        <button class="mode-card active" data-mode="Пауэрлифтинг" onclick="setMode(this)">
+          <div class="m-icon">🏋️</div>
+          <div class="m-name">Пауэрлифтинг</div>
+          <div class="m-sub">Сила в базе</div>
+        </button>
+        <button class="mode-card" data-mode="Обычный кач" onclick="setMode(this)">
+          <div class="m-icon">💪</div>
+          <div class="m-name">Обычный кач</div>
+          <div class="m-sub">Масса и памп</div>
+        </button>
+        <button class="mode-card" data-mode="Восстановительная" onclick="setMode(this)">
+          <div class="m-icon">🔋</div>
+          <div class="m-name">Восстановительная</div>
+          <div class="m-sub">Легко, разгон крови</div>
+        </button>
+        <button class="mode-card" data-mode="Стиль атлета" onclick="setMode(this)">
+          <div class="m-icon">👑</div>
+          <div class="m-name">Стиль атлета</div>
+          <div class="m-sub">10 легенд силы</div>
+        </button>
+      </div>
+
+      <div id="athleteSelectorWrap" style="display:none;">
+        <div class="section-title">Выбери атлета</div>
+        <div id="athleteGrid" class="athlete-grid"></div>
+      </div>
+
+      <label for="aiWish">Пожелания на тренировку / неделю</label>
+      <textarea id="aiWish" rows="2" placeholder="Например: уложиться в 50 минут, акцент на жим с паузой..."></textarea>
+
+      <button id="aiGenBtn" class="btn btn-primary" style="margin-top:12px;" onclick="generateAIPlan()">
+        ⚡ Сгенерировать с ИИ
+      </button>
+    </div>
+
+    <div id="aiResultWrap"></div>
+  </section>
+
+  <!-- ==================== ЭКРАН 3: ПРОГРЕСС ==================== -->
+  <section id="view-progress" class="view">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+        <div class="section-title" style="margin:0;">Динамика силы (расчётный 1ПМ)</div>
+        <select id="chartExSelect" style="width:auto; padding:6px 10px; font-size:12px;" onchange="renderStrengthChart()"></select>
+      </div>
+      <div id="strengthChart" class="chart-wrap"></div>
+      <div id="strengthStats" class="stats-row"></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+        <div class="section-title" style="margin:0;">Вес тела (кг)</div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <input id="quickBwInput" type="text" inputmode="decimal" placeholder="92.0" style="width:74px; padding:6px 8px; font-size:13px;">
+          <button class="btn btn-primary btn-sm" style="width:auto;" onclick="logBodyweight()">＋</button>
+        </div>
+      </div>
+      <div id="bwChart" class="chart-wrap"></div>
+    </div>
+
+    <div class="section-title">Сохранённые рекорды (1ПМ)</div>
+    <div id="recordsList"></div>
+
+    <div class="section-title">История тренировок</div>
+    <div id="historyList"></div>
+  </section>
+
+  <!-- ==================== ЭКРАН 4: ПРОФИЛЬ ==================== -->
+  <section id="view-profile" class="view">
+    <div class="card">
+      <div class="section-title" style="margin-top:0;">Данные для ИИ-тренера</div>
+      <div style="display:grid; grid-template-columns:1fr 2fr; gap:10px; margin-bottom:10px;">
+        <div>
+          <label for="profBw">Вес тела (кг)</label>
+          <input id="profBw" type="text" inputmode="decimal" />
+        </div>
+        <div>
+          <label for="profGoal">Главная цель</label>
+          <input id="profGoal" type="text" placeholder="Сила в базе / масса" />
+        </div>
+      </div>
+
+      <label for="profStopList">Личные заметки и «Стоп-лист» для ИИ</label>
+      <textarea id="profStopList" rows="4" placeholder="Например: не предлагать жим ногами и пуловер; в приседе широкий открытый хват..."></textarea>
+
+      <button class="btn btn-primary" style="margin-top:12px;" onclick="saveProfile()">💾 Сохранить профиль</button>
+    </div>
+
+    <div class="card">
+      <div class="section-title" style="margin-top:0;">Мои упражнения</div>
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <input id="newExInput" type="text" placeholder="Новое упражнение..." />
+        <button class="btn btn-primary btn-sm" style="width:auto; padding:0 16px;" onclick="addProfileExercise()">Добавить</button>
+      </div>
+      <div id="profileExChips" class="chip-row"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title" style="margin-top:0;">Облачная синхронизация</div>
+      <div id="cloudStatusText" style="font-size:12.5px; color:var(--text-dim); margin-bottom:10px;"></div>
+      <button class="btn btn-ghost" style="width:100%;" onclick="syncWithCloud(true)">🔄 Синхронизировать с Google Таблицей</button>
+    </div>
+  </section>
+</main>
+
+<!-- ==================== НИЖНЕЕ МЕНЮ ==================== -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="switchTab('workout', this)"><span class="n-ico">🏋️</span>Тренировка</button>
+  <button class="nav-btn" onclick="switchTab('ai', this)"><span class="n-ico">🤖</span>ИИ-Тренер</button>
+  <button class="nav-btn" onclick="switchTab('progress', this)"><span class="n-ico">📊</span>Прогресс</button>
+  <button class="nav-btn" onclick="switchTab('profile', this)"><span class="n-ico">⚙️</span>Профиль</button>
+</nav>
+
+<!-- ==================== МОДАЛКИ ==================== -->
+<div id="modalBackdrop" class="modal-backdrop" onclick="if(event.target===this) closeModal()">
+  <div id="modalSheet" class="modal-sheet"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// =========================================================================
+// НАСТРОЙКИ ПОДКЛЮЧЕНИЯ — ВСТАВЬ СВОИ ДАННЫЕ СЮДА
+// =========================================================================
+const APP_CONFIG = {
+  // URL веб-приложения Google Apps Script (из Шага 2)  <<< ВСТАВЬ СЮДА
+  API_URL: 'https://script.google.com/macros/s/AKfycbzkBqCSrNgpwPZnVqxzSkpM6YjBPWl_j3zJY5RIcD4_6Sjyn53Ekd7RiSt8wPXQ-oFjPg/exec',
+
+  // Тот же пароль API_SECRET, что и в Code.gs  <<< ВСТАВЬ СЮДА
+  API_SECRET: 'iron2026secret'
+};
+
+// =========================================================================
+// СПРАВОЧНИКИ И СОСТОЯНИЕ
+// =========================================================================
+const ATHLETES = [
+  { name: 'Кирилл Сарычев', tag: 'Жим, паузы, трицепс' },
+  { name: 'Андрей Маланичев', tag: 'Тяжелая классика' },
+  { name: 'Юрий Белкин', tag: 'Техника и взрыв' },
+  { name: 'Эд Коэн', tag: 'Линейный рост' },
+  { name: 'Джон Хаак', tag: 'Сила + масса' },
+  { name: 'Хафтор Бьёрнссон', tag: 'Стронгмен мощь' },
+  { name: 'Дориан Ятс', tag: 'HIT в отказ' },
+  { name: 'Арнольд Шварценеггер', tag: 'Объемный кач' },
+  { name: 'Крис Бамстед (CBum)', tag: 'Classic Physique' },
+  { name: 'Том Платц', tag: 'Экстрим объем' }
+];
+
+const SET_TAGS = [
+  { id: '🟢 Запас', short: '🟢 Запас' },
+  { id: '🔥 В точку', short: '🔥 В точку' },
+  { id: '💀 Предел', short: '💀 Предел' },
+  { id: '⚠️ Дискомфорт', short: '⚠️ Дискомфорт' },
+  { id: '❌ Не пошло', short: '❌ Не пошло' }
+];
+
+const DEFAULT_EXERCISES = [
+  'Присед со штангой', 'Присед с паузой', 'Жим лежа', 'Жим лежа с паузой',
+  'Становая тяга', 'Шраги со штангой', 'Тяга Т-грифа', 'Гиперэкстензия',
+  'Тяга верхнего блока', 'Разгибания на блоке', 'Скручивания на скамье'
+];
+
+const STORAGE_KEY = 'iron_ai_state_v1';
+
+let state = loadLocalState();
+let aiUI = { horizon: 'one', mode: 'Пауэрлифтинг', athlete: ATHLETES[0].name, activeDay: 0 };
+let selectedTagByEx = {};
+let warmupOpenByEx = {};
+let warmupChecked = {};
+let restNotified = false;
+
+// Инициализация Telegram WebApp
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+if (tg) {
+  try {
+    tg.ready();
+    tg.expand();
+    tg.setHeaderColor('#08080a');
+    tg.setBackgroundColor('#08080a');
+  } catch (e) {}
+}
+
+function haptic(type = 'light') {
+  try {
+    if (!tg || !tg.HapticFeedback) return;
+    if (type === 'success') tg.HapticFeedback.notificationOccurred('success');
+    else tg.HapticFeedback.impactOccurred(type);
+  } catch (e) {}
+}
+
+function loadLocalState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return {
+    activeWorkout: null,
+    restTimer: { endTime: 0, totalSec: 180 },
+    lastRestSec: 180,
+    profile: {
+      bodyweight: 92,
+      goal: 'Рост силы в базовой тройке',
+      stopList: '',
+      exercises: [...DEFAULT_EXERCISES]
+    },
+    workouts: [],
+    records: [],
+    bodyweight: [],
+    pendingWorkouts: [],
+    lastAIPlan: null
+  };
+}
+
+function saveLocal() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  updateSyncPill();
+}
+
+// =========================================================================
+// УТИЛИТЫ
+// =========================================================================
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+}
+function parseNum(v) {
+  return parseFloat(String(v || '0').replace(',', '.')) || 0;
+}
+function pad2(n) { return String(n).padStart(2, '0'); }
+function todayISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+}
+function fmtClock(ts) {
+  const d = new Date(ts);
+  return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+}
+function fmtDuration(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return (h > 0 ? pad2(h) + ':' : '') + pad2(m) + ':' + pad2(sec);
+}
+function round25(n) { return Math.max(20, Math.round(n / 2.5) * 2.5); }
+function calc1RM(w, r) {
+  if (!w || !r) return 0;
+  if (r <= 1) return w;
+  return Math.round(w * (1 + r / 30) * 2) / 2;
+}
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+// =========================================================================
+// НАВИГАЦИЯ
+// =========================================================================
+function switchTab(tab, btn) {
+  haptic('light');
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + tab).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else {
+    const idx = ['workout','ai','progress','profile'].indexOf(tab);
+    document.querySelectorAll('.nav-btn')[idx]?.classList.add('active');
+  }
+  if (tab === 'progress') renderProgressView();
+  if (tab === 'profile') renderProfileView();
+  if (tab === 'ai') renderAIResult();
+}
+
+// =========================================================================
+// ЭКРАН 1: ТРЕНИРОВКА
+// =========================================================================
+function startWorkout(presetExercises = null) {
+  haptic('medium');
+  const now = Date.now();
+  state.activeWorkout = {
+    id: 'w_' + now,
+    date: todayISO(),
+    startTs: now,
+    startTime: fmtClock(now),
+    exercises: presetExercises || []
+  };
+  saveLocal();
+  renderWorkoutView();
+}
+
+function getLastPerformance(exName) {
+  for (const w of state.workouts) {
+    const found = (w.exercises || []).find(e => e.name.toLowerCase() === exName.toLowerCase() && e.sets && e.sets.length);
+    if (found) {
+      const setsTxt = found.sets.map(s => `${s.weight}×${s.reps}`).join(', ');
+      return `Прошлый раз (${w.date.slice(5)}): ${setsTxt}`;
+    }
+  }
+  return '';
+}
+
+function renderWorkoutView() {
+  const card = document.getElementById('sessionCard');
+  const container = document.getElementById('exercisesContainer');
+  const footer = document.getElementById('workoutFooterActions');
+
+  if (!state.activeWorkout) {
+    card.innerHTML = `
+      <div style="text-align:center; padding:10px 4px;">
+        <div style="font-size:32px; margin-bottom:6px;">⚡</div>
+        <div style="font-size:18px; font-weight:800; margin-bottom:4px;">Готов к тренировке?</div>
+        <div style="font-size:13px; color:var(--text-dim); margin-bottom:16px;">
+          Зафиксируем время старта, таймер отдыха и тоннаж. Или собери план у ИИ-тренера.
+        </div>
+        <button class="btn btn-primary" onclick="startWorkout()">▶ Начать тренировку</button>
+        <button class="btn btn-ghost" style="width:100%; margin-top:8px;" onclick="switchTab('ai')">🤖 Сгенерировать у ИИ-тренера</button>
+      </div>
+    `;
+    container.innerHTML = '';
+    footer.style.display = 'none';
+    return;
+  }
+
+  const w = state.activeWorkout;
+  const tonnage = calcWorkoutTonnage(w);
+  card.innerHTML = `
+    <div class="session-banner">
+      <div>
+        <div style="font-size:11px; color:var(--accent-2); font-weight:700; text-transform:uppercase; letter-spacing:0.08em;">Идет тренировка</div>
+        <div id="liveDuration" class="live-timer num">${fmtDuration(Date.now() - w.startTs)}</div>
+        <div class="meta-sub num">Старт ${w.startTime} · ${w.date} · Тоннаж: <b style="color:#fff;">${tonnage} кг</b></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <button class="btn btn-ghost btn-sm" onclick="startRestTimer(state.lastRestSec || 180)">⏱ Отдых</button>
+        <button class="btn btn-danger btn-sm" onclick="cancelWorkout()">Отмена</button>
+      </div>
+    </div>
+  `;
+
+  footer.style.display = 'flex';
+
+  if (w.exercises.length === 0) {
+    container.innerHTML = `
+      <div class="card" style="text-align:center; color:var(--text-dim); font-size:13px;">
+        Пока нет упражнений. Нажми «Добавить упражнение» ниже.
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = w.exercises.map((ex, exIdx) => {
+    const lastPerf = getLastPerformance(ex.name);
+    const defaultW = ex.sets.length ? ex.sets[ex.sets.length - 1].weight : (ex.targetWeight || '');
+    const defaultR = ex.sets.length ? ex.sets[ex.sets.length - 1].reps : (ex.targetReps || '');
+    const selTag = selectedTagByEx[exIdx] || '';
+    const isWarmOpen = !!warmupOpenByEx[exIdx];
+    const workWeightForWarmup = parseNum(defaultW) || parseNum(ex.targetWeight) || 100;
+
+    return `
+      <div class="card">
+        <div class="ex-head">
+          <div>
+            <div class="ex-title">${esc(ex.name)}</div>
+            ${ex.targetSets ? `<div class="ex-meta num">План: ${ex.targetWeight || 0} кг × ${esc(ex.targetReps)} × ${ex.targetSets} подх.${ex.note ? ' · ' + esc(ex.note) : ''}</div>` : ''}
+            ${lastPerf ? `<div class="ex-last num">${esc(lastPerf)}</div>` : ''}
+          </div>
+          <div class="ex-actions">
+            <button class="btn btn-ghost btn-sm" onclick="toggleWarmup(${exIdx})" title="Авторазминка">🔥 Разминка</button>
+            <button class="btn-icon" onclick="removeExercise(${exIdx})" title="Удалить">✕</button>
+          </div>
+        </div>
+
+        ${isWarmOpen ? renderWarmupBlock(exIdx, workWeightForWarmup) : ''}
+
+        <div class="set-list">
+          ${ex.sets.map((s, sIdx) => `
+            <div class="set-row">
+              <div class="set-num num">${sIdx + 1}</div>
+              <div class="set-val num">${s.weight} кг × ${s.reps}</div>
+              ${s.tag ? `<span class="set-tag-badge">${esc(s.tag)}</span>` : ''}
+              <button class="btn btn-ghost btn-sm" style="padding:5px 8px; color:var(--accent-2);" onclick="open1RMModal(${exIdx}, ${sIdx})">⚡1ПМ</button>
+              <button class="btn-icon" style="width:28px; height:28px; font-size:12px;" onclick="duplicateSet(${exIdx}, ${sIdx})" title="Повторить">📋</button>
+              <button class="btn-icon" style="width:28px; height:28px; font-size:12px;" onclick="deleteSet(${exIdx}, ${sIdx})" title="Удалить">🗑</button>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="add-set-grid">
+          <input id="w_${exIdx}" type="text" inputmode="decimal" placeholder="Вес (кг)" value="${defaultW}" />
+          <input id="r_${exIdx}" type="text" inputmode="numeric" placeholder="Повторы" value="${defaultR}" />
+          <button class="btn btn-primary" style="width:auto; padding:0 16px;" onclick="addSet(${exIdx})">＋</button>
+        </div>
+
+        <div class="chip-row">
+          ${SET_TAGS.map(t => `
+            <button class="chip ${selTag === t.id ? 'selected' : ''}" onclick="selectTag(${exIdx}, '${t.id}')">${t.short}</button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function calcWorkoutTonnage(w) {
+  let total = 0;
+  (w.exercises || []).forEach(ex => {
+    (ex.sets || []).forEach(s => { total += (Number(s.weight) || 0) * (Number(s.reps) || 0); });
+  });
+  return Math.round(total);
+}
+
+function selectTag(exIdx, tagId) {
+  haptic('light');
+  selectedTagByEx[exIdx] = selectedTagByEx[exIdx] === tagId ? '' : tagId;
+  renderWorkoutView();
+}
+
+function addSet(exIdx) {
+  const wVal = parseNum(document.getElementById('w_' + exIdx).value);
+  const rVal = parseInt(document.getElementById('r_' + exIdx).value, 10) || 0;
+  if (rVal <= 0) { showToast('Укажи количество повторений'); return; }
+
+  haptic('medium');
+  const ex = state.activeWorkout.exercises[exIdx];
+  ex.sets.push({
+    weight: wVal,
+    reps: rVal,
+    tag: selectedTagByEx[exIdx] || ''
+  });
+  selectedTagByEx[exIdx] = '';
+  saveLocal();
+  renderWorkoutView();
+
+  const restSec = ex.restSec || state.lastRestSec || 180;
+  startRestTimer(restSec);
+}
+
+function duplicateSet(exIdx, sIdx) {
+  haptic('medium');
+  const ex = state.activeWorkout.exercises[exIdx];
+  const orig = ex.sets[sIdx];
+  ex.sets.push({ ...orig });
+  saveLocal();
+  renderWorkoutView();
+  startRestTimer(ex.restSec || state.lastRestSec || 180);
+  showToast('Подход продублирован');
+}
+
+function deleteSet(exIdx, sIdx) {
+  haptic('light');
+  state.activeWorkout.exercises[exIdx].sets.splice(sIdx, 1);
+  saveLocal();
+  renderWorkoutView();
+}
+
+function removeExercise(exIdx) {
+  if (!confirm('Удалить упражнение из текущей тренировки?')) return;
+  state.activeWorkout.exercises.splice(exIdx, 1);
+  saveLocal();
+  renderWorkoutView();
+}
+
+function cancelWorkout() {
+  if (!confirm('Отменить текущую тренировку без сохранения?')) return;
+  state.activeWorkout = null;
+  stopRestTimer();
+  saveLocal();
+  renderWorkoutView();
+}
+
+// =========================================================================
+// АВТОРАЗМИНКА
+// =========================================================================
+function toggleWarmup(exIdx) {
+  haptic('light');
+  warmupOpenByEx[exIdx] = !warmupOpenByEx[exIdx];
+  renderWorkoutView();
+}
+
+function buildWarmupSets(target) {
+  if (target <= 30) return [{ w: 20, r: 10 }];
+  const sets = [{ w: 20, r: 10 }];
+  const pcts = target >= 100
+    ? [{ p: 0.45, r: 6 }, { p: 0.65, r: 4 }, { p: 0.80, r: 3 }, { p: 0.90, r: 2 }]
+    : [{ p: 0.55, r: 6 }, { p: 0.75, r: 4 }, { p: 0.88, r: 2 }];
+
+  pcts.forEach(item => {
+    const w = round25(target * item.p);
+    if (w > sets[sets.length - 1].w && w < target) {
+      sets.push({ w, r: item.r });
+    }
+  });
+  return sets;
+}
+
+function renderWarmupBlock(exIdx, workWeight) {
+  const customW = state.activeWorkout.exercises[exIdx]._warmupTarget || workWeight;
+  const sets = buildWarmupSets(customW);
+  return `
+    <div class="warmup-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">
+        <span style="font-size:12px; font-weight:700; color:var(--accent-2);">🔥 Авторазминка под рабочий вес:</span>
+        <input type="text" inputmode="decimal" value="${customW}" style="width:70px; padding:4px 8px; font-size:13px;"
+          onchange="updateWarmupTarget(${exIdx}, this.value)" />
+      </div>
+      ${sets.map((s, i) => {
+        const key = `${exIdx}_${i}_${s.w}`;
+        const chk = !!warmupChecked[key];
+        return `
+          <div class="warmup-row">
+            <div class="warmup-check num ${chk ? 'checked' : ''}" onclick="toggleWarmupCheck('${key}')">
+              <span>${chk ? '✅' : '⬜'}</span>
+              <b>${s.w} кг × ${s.r}</b>
+            </div>
+            <button class="btn btn-ghost btn-sm" style="padding:3px 8px; font-size:11px;" onclick="logWarmupSet(${exIdx}, ${s.w}, ${s.r})">В лог</button>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function updateWarmupTarget(exIdx, val) {
+  state.activeWorkout.exercises[exIdx]._warmupTarget = parseNum(val) || 60;
+  renderWorkoutView();
+}
+
+function toggleWarmupCheck(key) {
+  haptic('light');
+  warmupChecked[key] = !warmupChecked[key];
+  renderWorkoutView();
+}
+
+function logWarmupSet(exIdx, w, r) {
+  haptic('light');
+  state.activeWorkout.exercises[exIdx].sets.push({ weight: w, reps: r, tag: 'Разминка' });
+  saveLocal();
+  renderWorkoutView();
+}
+
+// =========================================================================
+// ЖИВОЙ ТАЙМЕР ОТДЫХА (ПРИВЯЗАН К ЧАСАМ — НЕ ОСТАНАВЛИВАЕТСЯ В ФОНЕ)
+// =========================================================================
+function startRestTimer(seconds) {
+  state.lastRestSec = seconds;
+  state.restTimer = {
+    endTime: Date.now() + seconds * 1000,
+    totalSec: seconds
+  };
+  restNotified = false;
+  saveLocal();
+  tickTimers();
+}
+
+function addRestTime(sec) {
+  haptic('light');
+  const now = Date.now();
+  const base = Math.max(now, state.restTimer.endTime || now);
+  state.restTimer.endTime = base + sec * 1000;
+  state.restTimer.totalSec = Math.max(state.restTimer.totalSec, Math.ceil((state.restTimer.endTime - now) / 1000));
+  restNotified = false;
+  saveLocal();
+  tickTimers();
+}
+
+function stopRestTimer() {
+  state.restTimer = { endTime: 0, totalSec: 180 };
+  saveLocal();
+  document.getElementById('restWidget').style.display = 'none';
+}
+
+function tickTimers() {
+  // 1. Общее время тренировки
+  if (state.activeWorkout) {
+    const el = document.getElementById('liveDuration');
+    if (el) el.textContent = fmtDuration(Date.now() - state.activeWorkout.startTs);
+  }
+
+  // 2. Таймер отдыха
+  const rw = document.getElementById('restWidget');
+  const end = state.restTimer && state.restTimer.endTime;
+  if (!end) { rw.style.display = 'none'; return; }
+
+  const leftMs = end - Date.now();
+  rw.style.display = 'block';
+
+  if (leftMs <= 0) {
+    if (!restNotified) {
+      restNotified = true;
+      haptic('success');
+    }
+    rw.classList.add('done');
+    rw.innerHTML = `
+      <div class="rest-top">
+        <div>
+          <div style="font-size:11px; color:var(--green); font-weight:700; text-transform:uppercase;">Отдых завершен</div>
+          <div class="rest-time" style="color:var(--green); font-size:22px;">ПОРА К ШТАНГЕ 🔥</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="stopRestTimer()">Скрыть</button>
+      </div>
+    `;
+    return;
+  }
+
+  rw.classList.remove('done');
+  const leftSec = Math.ceil(leftMs / 1000);
+  const pct = Math.min(100, Math.max(0, (leftSec / (state.restTimer.totalSec || 180)) * 100));
+  const targetClock = fmtClock(end);
+
+  rw.innerHTML = `
+    <div class="rest-top">
+      <div>
+        <div style="font-size:11px; color:var(--text-dim); font-weight:700; text-transform:uppercase;">Отдых между подходами</div>
+        <div class="rest-time num">${pad2(Math.floor(leftSec / 60))}:${pad2(leftSec % 60)}</div>
+      </div>
+      <div class="rest-target-badge num">Подход в ${targetClock}</div>
+    </div>
+    <div class="rest-bar-bg"><div class="rest-bar-fill" style="width:${pct}%"></div></div>
+    <div class="rest-presets">
+      <button class="btn btn-ghost btn-sm" onclick="startRestTimer(90)">1:30</button>
+      <button class="btn btn-ghost btn-sm" onclick="startRestTimer(120)">2:00</button>
+      <button class="btn btn-ghost btn-sm" onclick="startRestTimer(180)">3:00</button>
+      <button class="btn btn-ghost btn-sm" onclick="startRestTimer(240)">4:00</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--accent-2);" onclick="addRestTime(30)">+30с</button>
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="stopRestTimer()">✕</button>
+    </div>
+  `;
+}
+
+setInterval(tickTimers, 500);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) tickTimers(); });
+
+// =========================================================================
+// МОДАЛКИ: ДОБАВЛЕНИЕ УПРАЖНЕНИЯ, РАСЧЕТНЫЙ 1ПМ, ЗАВЕРШЕНИЕ ТРЕНИРОВКИ
+// =========================================================================
+function openModal(html) {
+  document.getElementById('modalSheet').innerHTML = html;
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('open');
+}
+
+function openAddExerciseModal() {
+  const list = state.profile.exercises || DEFAULT_EXERCISES;
+  openModal(`
+    <div class="modal-head">
+      <div class="modal-title">Выбери упражнение</div>
+      <button class="btn-icon" onclick="closeModal()">✕</button>
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
+      <input id="customExModalInput" type="text" placeholder="Или впиши свое..." />
+      <button class="btn btn-primary btn-sm" style="width:auto;" onclick="addExFromInput()">Ок</button>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:7px;">
+      ${list.map(name => `
+        <button class="btn btn-ghost" style="justify-content:flex-start;" onclick="appendExercise('${esc(name).replace(/'/g, "\\'")}')">
+          🏋️ ${esc(name)}
+        </button>
+      `).join('')}
+    </div>
+  `);
+}
+
+function addExFromInput() {
+  const name = document.getElementById('customExModalInput').value.trim();
+  if (!name) return;
+  appendExercise(name);
+}
+
+function appendExercise(name) {
+  haptic('light');
+  if (!state.activeWorkout) startWorkout();
+  state.activeWorkout.exercises.push({ name, sets: [] });
+  saveLocal();
+  closeModal();
+  renderWorkoutView();
+}
+
+function open1RMModal(exIdx, sIdx) {
+  haptic('medium');
+  const ex = state.activeWorkout.exercises[exIdx];
+  const s = ex.sets[sIdx];
+  const est = calc1RM(s.weight, s.reps);
+  const p90 = round25(est * 0.9);
+  const p85 = round25(est * 0.85);
+  const p80 = round25(est * 0.8);
+
+  openModal(`
+    <div class="modal-head">
+      <div class="modal-title">⚡ Расчётный максимум (1ПМ)</div>
+      <button class="btn-icon" onclick="closeModal()">✕</button>
+    </div>
+    <div style="text-align:center; padding:8px 0 14px;">
+      <div style="font-size:13px; color:var(--text-dim);">${esc(ex.name)} · ${s.weight} кг × ${s.reps}</div>
+      <div class="num" style="font-size:44px; font-weight:900; color:var(--accent-2); margin:8px 0; text-shadow:0 0 24px var(--accent-glow);">
+        ${est} кг
+      </div>
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-val num">${p90}</div><div class="stat-lbl">90% (~3 повт)</div></div>
+        <div class="stat-box"><div class="stat-val num">${p85}</div><div class="stat-lbl">85% (~5 повт)</div></div>
+        <div class="stat-box"><div class="stat-val num">${p80}</div><div class="stat-lbl">80% (~8 повт)</div></div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+      <button class="btn btn-ghost" onclick="closeModal()">Закрыть</button>
+      <button class="btn btn-primary" onclick="save1RMRecord('${esc(ex.name).replace(/'/g, "\\'")}', ${s.weight}, ${s.reps}, ${est})">🏆 В рекорды</button>
+    </div>
+  `);
+}
+
+async function save1RMRecord(exercise, weight, reps, est1RM) {
+  const rec = { date: todayISO(), exercise, weight, reps, est1RM };
+  state.records.unshift(rec);
+  saveLocal();
+  closeModal();
+  showToast('Рекорд сохранен: ' + est1RM + ' кг');
+  await callAPI('saveRecord', { record: rec });
+}
+
+// Завершение тренировки и плашка оценки
+let fbState = { feel: 4, weightFeel: 'По плану', afterFeel: 'Приятная усталость' };
+
+function openFinishModal() {
+  const w = state.activeWorkout;
+  const hasSets = w.exercises.some(e => e.sets.length > 0);
+  if (!hasSets) { showToast('Запиши хотя бы один подход'); return; }
+
+  const endNow = Date.now();
+  const durMin = Math.max(1, Math.round((endNow - w.startTs) / 60000));
+  const tonnage = calcWorkoutTonnage(w);
+  fbState = { feel: 4, weightFeel: 'По плану', afterFeel: 'Приятная усталость' };
+
+  openModal(`
+    <div class="modal-head">
+      <div class="modal-title">🏁 Итоги тренировки</div>
+      <button class="btn-icon" onclick="closeModal()">✕</button>
+    </div>
+    <div class="stats-row" style="margin-top:0; margin-bottom:14px;">
+      <div class="stat-box"><div class="stat-val num" style="font-size:14px;">${w.startTime}–${fmtClock(endNow)}</div><div class="stat-lbl">Время</div></div>
+      <div class="stat-box"><div class="stat-val num">${durMin} м</div><div class="stat-lbl">Длительность</div></div>
+      <div class="stat-box"><div class="stat-val num">${tonnage}</div><div class="stat-lbl">Тоннаж (кг)</div></div>
+    </div>
+
+    <label>Общее самочувствие (1 — разбитый, 5 — заряженный)</label>
+    <div class="scale-row" id="fbFeelRow">
+      ${[1,2,3,4,5].map(n => `<button class="scale-btn ${n===4?'active':''}" onclick="setFb('feel', ${n}, this)">${n}</button>`).join('')}
+    </div>
+
+    <label>Как шёл вес</label>
+    <div class="chip-row" id="fbWeightRow" style="margin-bottom:12px;">
+      ${['Легко','По плану','Тяжеловато','Не пошёл'].map(v => `
+        <button class="chip ${v==='По плану'?'selected':''}" onclick="setFb('weightFeel', '${v}', this)">${v}</button>
+      `).join('')}
+    </div>
+
+    <label>Чувство после тренировки</label>
+    <div class="chip-row" id="fbAfterRow" style="margin-bottom:12px;">
+      ${['Бодрость','Приятная усталость','Выжат в ноль'].map(v => `
+        <button class="chip ${v==='Приятная усталость'?'selected':''}" onclick="setFb('afterFeel', '${v}', this)">${v}</button>
+      `).join('')}
+    </div>
+
+    <label for="fbGood">Что получилось хорошо</label>
+    <input id="fbGood" type="text" placeholder="Например: уверенный жим, хорошая скорость..." style="margin-bottom:10px;" />
+
+    <label for="fbBad">Что не пошло / нюансы для ИИ</label>
+    <input id="fbBad" type="text" placeholder="Например: тяжело пошел 3-й подход..." style="margin-bottom:14px;" />
+
+    <button id="saveFinishBtn" class="btn btn-primary" onclick="finishAndSaveWorkout(${durMin}, '${fmtClock(endNow)}', ${tonnage})">
+      💾 Сохранить тренировку
+    </button>
+  `);
+}
+
+function setFb(key, val, btn) {
+  haptic('light');
+  fbState[key] = val;
+  const parent = btn.parentElement;
+  parent.querySelectorAll('button').forEach(b => b.classList.remove('active', 'selected'));
+  btn.classList.add(key === 'feel' ? 'active' : 'selected');
+}
+
+async function finishAndSaveWorkout(durationMin, endTime, tonnage) {
+  const btn = document.getElementById('saveFinishBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Сохраняю...';
+
+  const w = state.activeWorkout;
+  const finished = {
+    id: w.id,
+    date: w.date,
+    startTime: w.startTime,
+    endTime: endTime,
+    durationMin: durationMin,
+    tonnage: tonnage,
+    feedback: {
+      feel: fbState.feel,
+      weightFeel: fbState.weightFeel,
+      afterFeel: fbState.afterFeel,
+      good: document.getElementById('fbGood').value.trim(),
+      bad: document.getElementById('fbBad').value.trim()
+    },
+    exercises: w.exercises.filter(e => e.sets.length > 0).map(e => ({ name: e.name, sets: e.sets }))
+  };
+
+  state.workouts.unshift(finished);
+  state.activeWorkout = null;
+  stopRestTimer();
+  saveLocal();
+
+  const res = await callAPI('saveWorkout', { workout: finished });
+  if (!res || !res.ok) {
+    state.pendingWorkouts.push(finished);
+    saveLocal();
+    showToast('Сохранено на телефон (синхронизируется при сети)');
+  } else {
+    showToast('Тренировка сохранена в Google Таблицу 🔥');
+  }
+
+  closeModal();
+  renderWorkoutView();
+}
+
+// =========================================================================
+// ЭКРАН 2: ИИ-ТРЕНЕР
+// =========================================================================
+function initAIView() {
+  document.getElementById('athleteGrid').innerHTML = ATHLETES.map((a, i) => `
+    <button class="athlete-btn ${i===0?'active':''}" onclick="selectAthlete('${a.name}', this)">
+      <div class="a-name">${a.name}</div>
+      <div class="a-tag">${a.tag}</div>
+    </button>
+  `).join('');
+  renderAIResult();
+}
+
+function setHorizon(h) {
+  haptic('light');
+  aiUI.horizon = h;
+  document.getElementById('hor-one').classList.toggle('active', h === 'one');
+  document.getElementById('hor-week').classList.toggle('active', h === 'week');
+}
+
+function setMode(btn) {
+  haptic('light');
+  aiUI.mode = btn.dataset.mode;
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('athleteSelectorWrap').style.display = aiUI.mode === 'Стиль атлета' ? 'block' : 'none';
+}
+
+function selectAthlete(name, btn) {
+  haptic('light');
+  aiUI.athlete = name;
+  document.querySelectorAll('.athlete-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function generateAIPlan() {
+  if (!isConfigured()) {
+    showToast('Сначала вставь URL Apps Script в index.html');
+    return;
+  }
+  const btn = document.getElementById('aiGenBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> ИИ анализирует историю...';
+
+  const res = await callAPI('generateAI', {
+    params: {
+      horizon: aiUI.horizon,
+      mode: aiUI.mode,
+      athlete: aiUI.athlete,
+      wish: document.getElementById('aiWish').value.trim()
+    }
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = '⚡ Сгенерировать с ИИ';
+
+  if (!res || !res.ok || !res.plan) {
+    showToast(res && res.error ? res.error : 'Ошибка связи с ИИ');
+    return;
+  }
+
+  haptic('success');
+  state.lastAIPlan = res.plan;
+  aiUI.activeDay = 0;
+  saveLocal();
+  renderAIResult();
+}
+
+function renderAIResult() {
+  const wrap = document.getElementById('aiResultWrap');
+  const plan = state.lastAIPlan;
+  if (!plan || !plan.days || !plan.days.length) {
+    wrap.innerHTML = '';
+    return;
+  }
+
+  const dayIdx = Math.min(aiUI.activeDay, plan.days.length - 1);
+  const day = plan.days[dayIdx];
+
+  wrap.innerHTML = `
+    <div class="card card-accent">
+      <div style="font-size:17px; font-weight:800; color:var(--accent-2); margin-bottom:6px;">${esc(plan.title)}</div>
+      <div style="font-size:13px; color:var(--text-dim); line-height:1.45; margin-bottom:12px;">${esc(plan.coachNote)}</div>
+
+      ${plan.days.length > 1 ? `
+        <div class="chip-row" style="margin-bottom:12px;">
+          ${plan.days.map((d, i) => `
+            <button class="chip ${i===dayIdx?'selected':''}" onclick="aiUI.activeDay=${i}; renderAIResult();">День ${i+1}</button>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <div style="font-weight:800; font-size:15px; margin-bottom:4px;">${esc(day.dayName)}</div>
+      <div style="font-size:12px; color:var(--text-dim); margin-bottom:10px;">${esc(day.focus)}</div>
+
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+        ${(day.exercises || []).map(ex => `
+          <div style="background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:12px; padding:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+              <b style="font-size:14px;">${esc(ex.name)}</b>
+              <span class="num" style="color:var(--accent-2); font-weight:800; font-size:13px;">
+                ${ex.targetWeight ? ex.targetWeight + ' кг · ' : ''}${ex.targetSets}×${esc(ex.targetReps)}
+              </span>
+            </div>
+            ${ex.note ? `<div style="font-size:12px; color:var(--text-dim); margin-top:4px;">${esc(ex.note)}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+
+      <button class="btn btn-primary" onclick="loadAIDayToWorkout(${dayIdx})">📥 Загрузить в тренировку</button>
+    </div>
+  `;
+}
+
+function loadAIDayToWorkout(dayIdx) {
+  const day = state.lastAIPlan.days[dayIdx];
+  if (state.activeWorkout && !confirm('Заменить текущую активную тренировку планом от ИИ?')) return;
+  const preset = (day.exercises || []).map(ex => ({
+    name: ex.name,
+    targetWeight: ex.targetWeight || 0,
+    targetReps: String(ex.targetReps || ''),
+    targetSets: ex.targetSets || 3,
+    restSec: ex.restSec || 180,
+    note: ex.note || '',
+    sets: []
+  }));
+  startWorkout(preset);
+  switchTab('workout');
+  showToast('План загружен — можно начинать!');
+}
+
+// =========================================================================
+// ЭКРАН 3: ПРОГРЕСС И ГРАФИКИ
+// =========================================================================
+function renderProgressView() {
+  // Список упражнений для графика силы
+  const exSet = new Set();
+  state.workouts.forEach(w => (w.exercises || []).forEach(e => exSet.add(e.name)));
+  const exArr = Array.from(exSet);
+  const sel = document.getElementById('chartExSelect');
+  const prevVal = sel.value;
+  sel.innerHTML = exArr.length
+    ? exArr.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('')
+    : '<option value="">Нет данных</option>';
+  if (prevVal && exArr.includes(prevVal)) sel.value = prevVal;
+
+  renderStrengthChart();
+  renderBwChart();
+  renderRecordsList();
+  renderHistoryList();
+}
+
+function renderSVGLineChart(containerId, points, unit) {
+  const el = document.getElementById(containerId);
+  if (!points || points.length < 2) {
+    el.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-dim); font-size:13px;">Нужно минимум 2 записи для графика</div>`;
+    return;
+  }
+
+  const w = 420, h = 160, padL = 38, padR = 14, padT = 16, padB = 26;
+  const vals = points.map(p => p.v);
+  let minV = Math.min(...vals), maxV = Math.max(...vals);
+  if (minV === maxV) { minV -= 5; maxV += 5; }
+  const range = maxV - minV;
+
+  const coords = points.map((p, i) => ({
+    x: padL + (i / (points.length - 1)) * (w - padL - padR),
+    y: padT + (1 - (p.v - minV) / range) * (h - padT - padB),
+    v: p.v,
+    d: p.d
+  }));
+
+  const linePath = coords.map((c, i) => (i === 0 ? 'M' : 'L') + c.x.toFixed(1) + ',' + c.y.toFixed(1)).join(' ');
+  const areaPath = linePath + ` L${coords[coords.length-1].x.toFixed(1)},${h-padB} L${coords[0].x.toFixed(1)},${h-padB} Z`;
+
+  el.innerHTML = `
+    <svg viewBox="0 0 ${w} ${h}" width="100%" height="100%">
+      <defs>
+        <linearGradient id="g_${containerId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ff5e00" stop-opacity="0.38" />
+          <stop offset="100%" stop-color="#ff5e00" stop-opacity="0.0" />
+        </linearGradient>
+      </defs>
+      <line x1="${padL}" y1="${padT}" x2="${w-padR}" y2="${padT}" stroke="rgba(255,255,255,0.06)" />
+      <line x1="${padL}" y1="${h-padB}" x2="${w-padR}" y2="${h-padB}" stroke="rgba(255,255,255,0.08)" />
+      <text x="4" y="${padT+4}" fill="#92929e" font-size="10">${Math.round(maxV)}</text>
+      <text x="4" y="${h-padB}" fill="#92929e" font-size="10">${Math.round(minV)}</text>
+      <path d="${areaPath}" fill="url(#g_${containerId})" />
+      <path d="${linePath}" fill="none" stroke="#ff6b00" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+      ${coords.map(c => `
+        <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="3.6" fill="#08080a" stroke="#ff8a00" stroke-width="2" />
+      `).join('')}
+      <text x="${padL}" y="${h-6}" fill="#92929e" font-size="10">${coords[0].d.slice(5)}</text>
+      <text x="${w-padR}" y="${h-6}" fill="#92929e" font-size="10" text-anchor="end">${coords[coords.length-1].d.slice(5)}</text>
+    </svg>
+  `;
+}
+
+function renderStrengthChart() {
+  const exName = document.getElementById('chartExSelect').value;
+  const pts = [];
+  [...state.workouts].reverse().forEach(w => {
+    const ex = (w.exercises || []).find(e => e.name === exName);
+    if (!ex || !ex.sets.length) return;
+    const best1RM = Math.max(...ex.sets.map(s => calc1RM(s.weight, s.reps)));
+    if (best1RM > 0) pts.push({ d: w.date, v: best1RM });
+  });
+  renderSVGLineChart('strengthChart', pts, 'кг');
+
+  const statsEl = document.getElementById('strengthStats');
+  if (!pts.length) { statsEl.innerHTML = ''; return; }
+  const max = Math.max(...pts.map(p => p.v));
+  const last = pts[pts.length - 1].v;
+  const diff = Math.round((last - pts[0].v) * 10) / 10;
+  statsEl.innerHTML = `
+    <div class="stat-box"><div class="stat-val num">${last} кг</div><div class="stat-lbl">Последний 1ПМ</div></div>
+    <div class="stat-box"><div class="stat-val num">${max} кг</div><div class="stat-lbl">Пик 1ПМ</div></div>
+    <div class="stat-box"><div class="stat-val num">${diff >= 0 ? '+' : ''}${diff} кг</div><div class="stat-lbl">Динамика</div></div>
+  `;
+}
+
+function renderBwChart() {
+  const pts = (state.bodyweight || []).map(b => ({ d: b.date, v: b.weight }));
+  renderSVGLineChart('bwChart', pts, 'кг');
+}
+
+async function logBodyweight() {
+  const val = parseNum(document.getElementById('quickBwInput').value);
+  if (val < 30 || val > 250) { showToast('Введи корректный вес'); return; }
+  const date = todayISO();
+  state.bodyweight.push({ date, weight: val });
+  state.profile.bodyweight = val;
+  document.getElementById('quickBwInput').value = '';
+  saveLocal();
+  renderBwChart();
+  showToast('Вес записан: ' + val + ' кг');
+  await callAPI('saveWeight', { weight: val, date });
+}
+
+function renderRecordsList() {
+  const el = document.getElementById('recordsList');
+  if (!state.records.length) {
+    el.innerHTML = `<div class="card" style="font-size:13px; color:var(--text-dim);">Нажми «⚡1ПМ» у любого подхода во время тренировки, если захочешь сохранить рекорд.</div>`;
+    return;
+  }
+  el.innerHTML = state.records.slice(0, 10).map(r => `
+    <div class="card" style="padding:11px 14px; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="font-weight:700; font-size:14px;">${esc(r.exercise)}</div>
+        <div style="font-size:11.5px; color:var(--text-dim);" class="num">${r.date} · ${r.weight} кг × ${r.reps}</div>
+      </div>
+      <div class="num" style="font-weight:900; font-size:17px; color:var(--accent-2);">${r.est1RM} кг</div>
+    </div>
+  `).join('');
+}
+
+function renderHistoryList() {
+  const el = document.getElementById('historyList');
+  if (!state.workouts.length) {
+    el.innerHTML = `<div class="card" style="font-size:13px; color:var(--text-dim);">Завершенных тренировок пока нет.</div>`;
+    return;
+  }
+  el.innerHTML = state.workouts.slice(0, 20).map((w, i) => {
+    const fb = w.feedback || {};
+    return `
+      <div class="card hist-item" onclick="this.classList.toggle('open')">
+        <div class="hist-top">
+          <div class="hist-date num">${w.date} <span style="color:var(--text-dim); font-weight:500; font-size:12px;">${w.startTime}–${w.endTime} (${w.durationMin}м)</span></div>
+          <div class="hist-ton num">${w.tonnage} кг</div>
+        </div>
+        <div class="chip-row" style="margin-top:6px;">
+          <span class="set-tag-badge">Самочувствие: ${fb.feel || '-'}/5</span>
+          ${fb.weightFeel ? `<span class="set-tag-badge">Вес: ${esc(fb.weightFeel)}</span>` : ''}
+          ${fb.afterFeel ? `<span class="set-tag-badge">${esc(fb.afterFeel)}</span>` : ''}
+        </div>
+        <div class="hist-details">
+          ${fb.good ? `<div style="margin-bottom:4px;">✅ <b>Получилось:</b> ${esc(fb.good)}</div>` : ''}
+          ${fb.bad ? `<div style="margin-bottom:8px;">⚠️ <b>Не пошло:</b> ${esc(fb.bad)}</div>` : ''}
+          ${(w.exercises || []).map(ex => `
+            <div style="margin-bottom:5px;">
+              <b>${esc(ex.name)}:</b>
+              <span class="num" style="color:var(--text-dim);">
+                ${(ex.sets || []).map(s => `${s.weight}×${s.reps}${s.tag ? ' ('+esc(s.tag)+')' : ''}`).join(', ')}
+              </span>
+            </div>
+          `).join('')}
+          <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="event.stopPropagation(); copyWorkoutText(${i})">📋 Скопировать отчет</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function copyWorkoutText(idx) {
+  const w = state.workouts[idx];
+  const lines = [`Тренировка ${w.date} (${w.startTime}–${w.endTime}, ${w.durationMin} мин)`];
+  (w.exercises || []).forEach(ex => {
+    lines.push('\n' + ex.name);
+    (ex.sets || []).forEach(s => lines.push(`${s.weight} кг * ${s.reps}${s.tag ? ' (' + s.tag + ')' : ''}`));
+  });
+  navigator.clipboard?.writeText(lines.join('\n')).then(() => showToast('Отчет скопирован'));
+}
+
+// =========================================================================
+// ЭКРАН 4: ПРОФИЛЬ
+// =========================================================================
+function renderProfileView() {
+  document.getElementById('profBw').value = state.profile.bodyweight || '';
+  document.getElementById('profGoal').value = state.profile.goal || '';
+  document.getElementById('profStopList').value = state.profile.stopList || '';
+
+  const exs = state.profile.exercises || [];
+  document.getElementById('profileExChips').innerHTML = exs.map((n, i) => `
+    <span class="chip selected" style="display:inline-flex; align-items:center; gap:6px;">
+      ${esc(n)}
+      <span style="cursor:pointer; opacity:0.75;" onclick="deleteProfileExercise(${i})">✕</span>
+    </span>
+  `).join('');
+
+  document.getElementById('cloudStatusText').textContent = isConfigured()
+    ? `Подключено к Google Apps Script. В очереди на отправку: ${state.pendingWorkouts.length}.`
+    : 'Режим локального теста: вставь URL веб-приложения Apps Script в файл index.html, чтобы включить облако и ИИ.';
+}
+
+function addProfileExercise() {
+  const inp = document.getElementById('newExInput');
+  const name = inp.value.trim();
+  if (!name) return;
+  if (!state.profile.exercises.includes(name)) state.profile.exercises.push(name);
+  inp.value = '';
+  saveLocal();
+  renderProfileView();
+}
+
+function deleteProfileExercise(idx) {
+  state.profile.exercises.splice(idx, 1);
+  saveLocal();
+  renderProfileView();
+}
+
+async function saveProfile() {
+  state.profile.bodyweight = parseNum(document.getElementById('profBw').value) || 92;
+  state.profile.goal = document.getElementById('profGoal').value.trim();
+  state.profile.stopList = document.getElementById('profStopList').value.trim();
+  saveLocal();
+  const res = await callAPI('saveProfile', { profile: state.profile });
+  showToast(res && res.ok ? 'Профиль сохранен в облако' : 'Сохранено локально');
+}
+
+// =========================================================================
+// СВЯЗЬ С GOOGLE APPS SCRIPT
+// =========================================================================
+function isConfigured() {
+  return APP_CONFIG.API_URL && APP_CONFIG.API_URL.startsWith('https://script.google.com/');
+}
+
+async function callAPI(action, extra = {}) {
+  if (!isConfigured()) return null;
+  try {
+    const res = await fetch(APP_CONFIG.API_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action, secret: APP_CONFIG.API_SECRET, ...extra })
+    });
+    return await res.json();
+  } catch (e) {
+    return { ok: false, error: 'Нет сети' };
+  }
+}
+
+function updateSyncPill() {
+  const pill = document.getElementById('syncPill');
+  const txt = document.getElementById('syncText');
+  pill.className = 'sync-pill';
+  if (!isConfigured()) { txt.textContent = 'Локально'; return; }
+  if (state.pendingWorkouts.length > 0) {
+    pill.classList.add('pending');
+    txt.textContent = `Очередь (${state.pendingWorkouts.length})`;
+  } else {
+    pill.classList.add('online');
+    txt.textContent = 'Облако ●';
+  }
+}
+
+async function syncWithCloud(manual = false) {
+  if (!isConfigured()) {
+    if (manual) showToast('Вставь API_URL в index.html');
+    return;
+  }
+  const txt = document.getElementById('syncText');
+  txt.textContent = 'Синхр...';
+
+  // Сначала отправляем несинхронизированные тренировки
+  if (state.pendingWorkouts.length > 0) {
+    const stillPending = [];
+    for (const pw of state.pendingWorkouts) {
+      const r = await callAPI('saveWorkout', { workout: pw });
+      if (!r || !r.ok) stillPending.push(pw);
+    }
+    state.pendingWorkouts = stillPending;
+  }
+
+  const data = await callAPI('sync');
+  if (data && data.ok) {
+    if (data.profile && data.profile.exercises && data.profile.exercises.length) {
+      state.profile = data.profile;
+    }
+    state.workouts = data.workouts || state.workouts;
+    state.records = data.records || state.records;
+    state.bodyweight = data.bodyweight || state.bodyweight;
+    saveLocal();
+    renderWorkoutView();
+    if (manual) showToast('Синхронизировано с Google Таблицей');
+  } else if (manual) {
+    showToast('Не удалось связаться с таблицей');
+  }
+  updateSyncPill();
+}
+
+// Старт приложения
+initAIView();
+renderWorkoutView();
+updateSyncPill();
+syncWithCloud(false);
+</script>
+</body>
+</html>
