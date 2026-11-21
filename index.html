@@ -1722,7 +1722,10 @@ function renderHistoryList() {
               </span>
             </div>
           `).join('')}
-          <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="event.stopPropagation(); copyWorkoutText(${i})">📋 Скопировать отчет</button>
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="event.stopPropagation(); copyWorkoutText(${i})">📋 Скопировать отчет</button>
+            <button class="btn btn-danger btn-sm" style="flex:0 auto; padding:6px 12px;" onclick="event.stopPropagation(); askDeleteWorkout(${i})">🗑 Удалить</button>
+          </div>
         </div>
       </div>
     `;
@@ -1760,6 +1763,27 @@ function renderProfileView() {
     : 'Режим локального теста: вставь URL веб-приложения Apps Script в файл index.html, чтобы включить облако и ИИ.';
 }
 
+  async function askDeleteWorkout(idx) {
+  haptic('medium');
+  const w = state.workouts[idx];
+  if (!confirm(`Удалить тренировку от ${w.date}? Она также будет полностью стёрта из Google Таблицы.`)) return;
+
+  const idToDelete = w.id;
+  // Сначала удаляем из локального состояния
+  state.workouts.splice(idx, 1);
+  saveLocal();
+  renderHistoryList();
+  showToast('Тренировка удалена');
+
+  // Отправляем запрос на удаление в облако
+  const res = await callAPI('deleteWorkout', { id: idToDelete });
+  if (res && res.ok) {
+    showToast('Удалено из Google Таблицы');
+  } else {
+    showToast('Не удалось удалить из облака, сотри строку вручную');
+  }
+}
+  
 function addProfileExercise() {
   const inp = document.getElementById('newExInput');
   const name = inp.value.trim();
